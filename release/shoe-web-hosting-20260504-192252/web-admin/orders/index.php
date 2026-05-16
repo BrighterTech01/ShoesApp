@@ -1,0 +1,93 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../includes/init.php';
+require_once __DIR__ . '/../includes/layout.php';
+
+require_admin_panel();
+
+try {
+    if (is_post()) {
+        update_order_status(
+            clean_int($_POST['id'] ?? 0),
+            clean_string($_POST['order_status'] ?? 'Pending', 'Pending'),
+            clean_string($_POST['payment_status'] ?? '')
+        );
+        flash_set('success', 'Order updated successfully.');
+        redirect_to(admin_path('orders/index.php'));
+    }
+} catch (Throwable $throwable) {
+    flash_set('error', $throwable->getMessage());
+    redirect_to(admin_path('orders/index.php'));
+}
+
+$orders = list_orders();
+
+admin_layout_start('Orders', 'orders');
+?>
+<section class="card">
+    <div class="page-header" style="margin-bottom: 10px;">
+        <div>
+            <p class="eyebrow">Order Pipeline</p>
+            <h2 style="font-size: 24px;">Process COD orders and deliveries</h2>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php if ($orders === []): ?>
+                <?php table_empty_state('No orders found.', 7); ?>
+            <?php else: ?>
+                <?php foreach ($orders as $order): ?>
+                    <tr>
+                        <td>
+                            <strong><?= htmlspecialchars($order['order_number']) ?></strong><br>
+                            <small><?= htmlspecialchars((string) $order['created_at']) ?></small>
+                        </td>
+                        <td><?= htmlspecialchars($order['customer_name']) ?></td>
+                        <td><?= (int) $order['item_count'] ?></td>
+                        <td><?= htmlspecialchars(format_currency($order['total_amount'])) ?></td>
+                        <td><?= status_badge($order['order_status']) ?></td>
+                        <td><?= status_badge($order['payment_status']) ?></td>
+                        <td>
+                            <form method="post" class="form-grid">
+                                <input type="hidden" name="id" value="<?= (int) $order['id'] ?>">
+                                <div class="field">
+                                    <select name="order_status">
+                                        <?php foreach (['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'] as $status): ?>
+                                            <option value="<?= htmlspecialchars($status) ?>" <?= $order['order_status'] === $status ? 'selected' : '' ?>><?= htmlspecialchars($status) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <select name="payment_status">
+                                        <?php foreach (['Pending', 'Paid', 'Cancelled'] as $paymentStatus): ?>
+                                            <option value="<?= htmlspecialchars($paymentStatus) ?>" <?= $order['payment_status'] === $paymentStatus ? 'selected' : '' ?>><?= htmlspecialchars($paymentStatus) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="inline-actions">
+                                    <button type="submit">Update</button>
+                                    <a class="secondary-btn" href="<?= htmlspecialchars(admin_path('orders/view.php?id=' . $order['id'])) ?>">View</a>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php admin_layout_end(); ?>
