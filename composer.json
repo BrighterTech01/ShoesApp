@@ -1,0 +1,8 @@
+{
+    "config": {
+        "cafile": "C:\\Python312\\Lib\\site-packages\\pip\\_vendor\\certifi\\cacert.pem"
+    },
+    "require": {
+        "phpmailer/phpmailer": "^6.9"
+    }
+}

@@ -116,16 +116,13 @@ $config = app_config();
 
         <div class="grid">
             <section class="panel">
-                <h2>Default Accounts</h2>
-                <p>Admin: <code><?= htmlspecialchars((string) $config['auth']['default_admin_email']) ?></code></p>
-                <p>Seller: <code><?= htmlspecialchars((string) $config['auth']['default_seller_email']) ?></code></p>
-                <p>Customer: <code><?= htmlspecialchars((string) $config['auth']['default_customer_email']) ?></code></p>
-                <p>Password: <code><?= htmlspecialchars((string) $config['auth']['default_password']) ?></code></p>
+                <h2>Deployment Check</h2>
+                <p>After uploading, open <code>backend/setup.php</code> once, then confirm <code>backend/health.php</code> returns JSON.</p>
             </section>
             <section class="panel">
                 <h2>MySQL Setup</h2>
-                <p>The database name defaults to <code><?= htmlspecialchars((string) $config['db']['name']) ?></code> and the tables auto-create on first successful connection.</p>
-                <p>If your MySQL login is not <code>root</code> with a blank password, update <code>backend/config/app.php</code>.</p>
+                <p>The database name is configured as <code><?= htmlspecialchars((string) $config['db']['name']) ?></code>.</p>
+                <p>For online hosting, update <code>backend/config/app.php</code> with the hosting database host, username, and password before upload.</p>
             </section>
         </div>
     </div>

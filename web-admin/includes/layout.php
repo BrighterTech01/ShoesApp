@@ -97,7 +97,7 @@ function status_badge(string $value): string
     $normalized = strtolower(trim($value));
     $class = match ($normalized) {
         'active', 'delivered', 'paid' => 'success',
-        'pending', 'confirmed', 'shipped' => 'warning',
+        'pending', 'confirmed', 'shipped', 'cancellation requested' => 'warning',
         'cancelled', 'inactive', 'out of stock' => 'danger',
         default => 'neutral',
     };

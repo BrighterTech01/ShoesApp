@@ -13,6 +13,8 @@ function user_payload(array $user): array
         'city' => $user['city'] ?? null,
         'province' => $user['province'] ?? null,
         'zip_code' => $user['zip_code'] ?? null,
+        'email_verified_at' => $user['email_verified_at'] ?? null,
+        'email_verified' => !empty($user['email_verified_at']),
         'created_at' => $user['created_at'] ?? null,
     ];
 }
@@ -20,7 +22,27 @@ function user_payload(array $user): array
 function current_user(): ?array
 {
     ensure_session_started();
-    return $_SESSION['auth_user'] ?? null;
+    if (isset($_SESSION['auth_user']) && is_array($_SESSION['auth_user'])) {
+        return $_SESSION['auth_user'];
+    }
+
+    $token = bearer_token_from_request();
+    if ($token === null) {
+        return null;
+    }
+
+    $payload = jwt_verify($token);
+    if ($payload === null) {
+        return null;
+    }
+
+    $userId = clean_int($payload['sub'] ?? 0);
+    if ($userId <= 0) {
+        return null;
+    }
+
+    $user = get_user_by_id($userId);
+    return $user ? user_payload($user) : null;
 }
 
 function current_user_id(): ?int
@@ -77,6 +99,16 @@ function attempt_login(string $email, string $password): ?array
     return $user;
 }
 
+function auth_response_payload(array $user): array
+{
+    $payload = user_payload($user);
+    $payload['token'] = jwt_for_user($user);
+    $payload['token_type'] = 'Bearer';
+    $payload['expires_in'] = (int) app_config('auth.jwt_ttl_seconds', 604800);
+
+    return $payload;
+}
+
 function register_account(array $data): array
 {
     $name = clean_string($data['name'] ?? '');
@@ -92,7 +124,7 @@ function register_account(array $data): array
         throw new InvalidArgumentException('Please enter a valid email address.');
     }
 
-    if (mb_strlen($password) < 6) {
+    if (strlen($password) < 6) {
         throw new InvalidArgumentException('Password must be at least 6 characters long.');
     }
 
@@ -122,6 +154,19 @@ function register_account(array $data): array
     }
 
     get_or_create_cart_id($userId);
+
+    $verificationToken = create_email_verification_token($userId);
+    $user = get_user_by_id($userId);
+    if ($user === null) {
+        throw new RuntimeException('Unable to create account.');
+    }
+
+    try {
+        send_verification_email($user, $verificationToken);
+    } catch (Throwable) {
+        // Account creation should still work even when SMTP/mail is unavailable.
+    }
+
     login_user($user);
 
     return $user;

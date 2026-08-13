@@ -60,7 +60,7 @@ $error = flash_get('error');
             </div>
             <div class="field">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required value="admin12345">
+                <input type="password" id="password" name="password" required>
             </div>
             <button type="submit">Login</button>
         </form>

@@ -1,1 +1,0 @@
-auth_user|a:10:{s:2:"id";i:3;s:4:"name";s:15:"Sample Customer";s:5:"email";s:20:"customer@shoes.local";s:4:"role";s:8:"customer";s:5:"phone";N;s:7:"address";N;s:4:"city";N;s:8:"province";N;s:8:"zip_code";N;s:10:"created_at";s:19:"2026-04-23 14:19:54";}

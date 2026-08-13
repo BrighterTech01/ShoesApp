@@ -18,7 +18,8 @@ try {
     update_order_status(
         $orderId,
         clean_string($data['order_status'] ?? 'Pending', 'Pending'),
-        clean_string($data['payment_status'] ?? '')
+        clean_string($data['payment_status'] ?? ''),
+        array_key_exists('shipping_location', $data) ? clean_string($data['shipping_location'] ?? '') : null
     );
 
     success_response(get_order($orderId), 'Order status updated.');

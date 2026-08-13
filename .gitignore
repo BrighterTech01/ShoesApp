@@ -1,0 +1,21 @@
+# Local runtime files
+*.log
+*.out
+*.err
+window*.xml
+phone-*.png
+expo-*.png
+
+# PHP local sessions
+storage/sessions/sess_*
+
+# Generated hosting packages
+release/*
+exports/*
+
+# Word temporary lock files
+docs/~$*.docx
+
+# Local environment overrides
+.env
+backend/config/mail.local.php

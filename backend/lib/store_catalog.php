@@ -115,6 +115,78 @@ function delete_brand(int $id): void
     execute_sql('DELETE FROM brands WHERE id = :id', [':id' => $id]);
 }
 
+function product_review_summary_sql(): string
+{
+    return "
+        SELECT
+            product_reviews.product_id,
+            AVG(product_reviews.rating) AS average_rating,
+            COUNT(*) AS rating_count
+        FROM (
+            SELECT DISTINCT
+                oi.product_id,
+                ofb.order_id,
+                ofb.rating
+            FROM order_feedback ofb
+            INNER JOIN order_items oi ON oi.order_id = ofb.order_id
+        ) product_reviews
+        GROUP BY product_reviews.product_id
+    ";
+}
+
+function get_product_review_summary(int $productId): array
+{
+    $summary = fetch_one_row(
+        'SELECT
+            AVG(product_reviews.rating) AS average_rating,
+            COUNT(*) AS rating_count
+         FROM (
+            SELECT DISTINCT
+                ofb.order_id,
+                ofb.rating
+            FROM order_feedback ofb
+            INNER JOIN order_items oi ON oi.order_id = ofb.order_id
+            WHERE oi.product_id = :product_id
+         ) product_reviews',
+        [':product_id' => $productId]
+    );
+
+    return [
+        'average_rating' => $summary !== null ? round((float) ($summary['average_rating'] ?? 0), 1) : 0.0,
+        'rating_count' => $summary !== null ? (int) ($summary['rating_count'] ?? 0) : 0,
+    ];
+}
+
+function list_product_reviews(int $productId, int $limit = 20): array
+{
+    $limit = max(1, min($limit, 50));
+
+    return fetch_all_rows(
+        "SELECT
+            ofb.id,
+            ofb.rating,
+            ofb.feedback,
+            ofb.created_at,
+            o.order_number,
+            u.name AS customer_name,
+            GROUP_CONCAT(CONCAT(oi.product_name, ' - ', oi.variant_label, ' x', oi.quantity) SEPARATOR ', ') AS item_summary
+         FROM order_feedback ofb
+         INNER JOIN orders o ON o.id = ofb.order_id
+         INNER JOIN users u ON u.id = ofb.user_id
+         INNER JOIN order_items oi ON oi.order_id = ofb.order_id AND oi.product_id = :product_id
+         GROUP BY
+            ofb.id,
+            ofb.rating,
+            ofb.feedback,
+            ofb.created_at,
+            o.order_number,
+            u.name
+         ORDER BY ofb.created_at DESC
+         LIMIT {$limit}",
+        [':product_id' => $productId]
+    );
+}
+
 function list_products(array $filters = []): array
 {
     $where = [];
@@ -131,8 +203,17 @@ function list_products(array $filters = []): array
 
     $search = clean_string($filters['search'] ?? '');
     if ($search !== '') {
-        $where[] = '(p.name LIKE :search OR p.description LIKE :search)';
-        $params[':search'] = '%' . $search . '%';
+        $where[] = '(
+            p.name LIKE :search_name
+            OR p.description LIKE :search_description
+            OR c.name LIKE :search_category
+            OR b.name LIKE :search_brand
+        )';
+        $searchTerm = '%' . $search . '%';
+        $params[':search_name'] = $searchTerm;
+        $params[':search_description'] = $searchTerm;
+        $params[':search_category'] = $searchTerm;
+        $params[':search_brand'] = $searchTerm;
     }
 
     $categoryId = clean_int($filters['category_id'] ?? 0);
@@ -162,26 +243,35 @@ function list_products(array $filters = []): array
             p.*,
             c.name AS category_name,
             b.name AS brand_name,
-            COALESCE(SUM(v.stock), 0) AS total_stock,
-            COUNT(v.id) AS variant_count
+            COALESCE(stock_summary.total_stock, 0) AS total_stock,
+            COALESCE(stock_summary.variant_count, 0) AS variant_count,
+            COALESCE(review_summary.average_rating, 0) AS average_rating,
+            COALESCE(review_summary.rating_count, 0) AS rating_count
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_variants v ON v.product_id = p.id
+        LEFT JOIN (
+            SELECT
+                product_id,
+                COALESCE(SUM(stock), 0) AS total_stock,
+                COUNT(id) AS variant_count
+            FROM product_variants
+            GROUP BY product_id
+        ) stock_summary ON stock_summary.product_id = p.id
+        LEFT JOIN (" . product_review_summary_sql() . ") review_summary ON review_summary.product_id = p.id
     ";
 
     if ($where !== []) {
         $sql .= ' WHERE ' . implode(' AND ', $where);
     }
 
-    $sql .= '
-        GROUP BY p.id
-        ORDER BY p.featured DESC, p.created_at DESC
-    ';
+    $sql .= ' ORDER BY p.featured DESC, p.created_at DESC';
 
     $products = fetch_all_rows($sql, $params);
     foreach ($products as &$product) {
         $product['image_url'] = public_image_url($product['image'] ?? null);
+        $product['average_rating'] = round((float) ($product['average_rating'] ?? 0), 1);
+        $product['rating_count'] = (int) ($product['rating_count'] ?? 0);
     }
     unset($product);
 
@@ -208,6 +298,10 @@ function get_product(int $id): ?array
 
     $product['variants'] = list_variants_by_product($id);
     $product['image_url'] = public_image_url($product['image'] ?? null);
+    $reviewSummary = get_product_review_summary($id);
+    $product['average_rating'] = $reviewSummary['average_rating'];
+    $product['rating_count'] = $reviewSummary['rating_count'];
+    $product['reviews'] = list_product_reviews($id);
 
     return $product;
 }

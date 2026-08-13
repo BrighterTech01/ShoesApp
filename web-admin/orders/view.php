@@ -36,8 +36,25 @@ admin_layout_start('Order Details', 'orders');
         <p><strong>Payment:</strong> <?= status_badge($order['payment_status']) ?></p>
         <p><strong>Payment method:</strong> <?= htmlspecialchars($order['payment_method']) ?></p>
         <p><strong>Total amount:</strong> <?= htmlspecialchars(format_currency($order['total_amount'])) ?></p>
+        <p><strong>Shipping location:</strong> <?= htmlspecialchars((string) ($order['shipping_location'] ?? 'Not set yet')) ?></p>
+        <p><strong>Location updated:</strong> <?= htmlspecialchars((string) ($order['shipping_location_updated_at'] ?? 'Not updated yet')) ?></p>
         <p><strong>Created at:</strong> <?= htmlspecialchars((string) $order['created_at']) ?></p>
+        <?php if ($order['order_status'] === cancellation_requested_status()): ?>
+            <p style="color: #ad6800; font-weight: 700;">Customer requested cancellation. Confirm it from the order list to return stock.</p>
+        <?php endif; ?>
         <a class="secondary-btn" href="<?= htmlspecialchars(admin_path('orders/index.php')) ?>">Back to Orders</a>
+    </article>
+
+    <article class="card">
+        <p class="eyebrow">Customer Feedback</p>
+        <h3>Order rating</h3>
+        <?php if (!empty($order['feedback'])): ?>
+            <p><strong>Rating:</strong> <?= (int) $order['feedback']['rating'] ?>/5</p>
+            <p><strong>Feedback:</strong> <?= htmlspecialchars((string) ($order['feedback']['feedback'] ?: 'No comment added.')) ?></p>
+            <p><strong>Submitted:</strong> <?= htmlspecialchars((string) $order['feedback']['created_at']) ?></p>
+        <?php else: ?>
+            <p>No customer feedback yet. Feedback becomes available after the customer rates a delivered order.</p>
+        <?php endif; ?>
     </article>
 </section>
 

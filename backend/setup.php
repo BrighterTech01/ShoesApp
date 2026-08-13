@@ -8,8 +8,7 @@ try {
 
     success_response([
         'database' => app_config('db.name'),
-        'default_admin_email' => app_config('auth.default_admin_email'),
-        'default_password' => app_config('auth.default_password'),
+        'status' => 'ready',
     ], 'Database connection succeeded and tables are ready.');
 } catch (Throwable $throwable) {
     error_response($throwable->getMessage(), 500);

@@ -73,6 +73,40 @@ function ensure_schema(PDO $pdo): void
         $pdo->exec($statement);
     }
 
+    apply_schema_column_updates($pdo);
     seed_default_data($pdo);
     $initialized = true;
+}
+
+function schema_column_exists(PDO $pdo, string $table, string $column): bool
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*) AS total
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE() AND table_name = :table_name AND column_name = :column_name'
+    );
+    $statement->execute([
+        ':table_name' => $table,
+        ':column_name' => $column,
+    ]);
+
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row !== false && (int) ($row['total'] ?? 0) > 0;
+}
+
+function apply_schema_column_updates(PDO $pdo): void
+{
+    foreach (schema_column_definitions() as $table => $columns) {
+        foreach ($columns as $columnName => $definition) {
+            if (schema_column_exists($pdo, (string) $table, (string) $columnName)) {
+                continue;
+            }
+
+            $pdo->exec(sprintf(
+                'ALTER TABLE `%s` ADD COLUMN %s',
+                str_replace('`', '``', (string) $table),
+                $definition
+            ));
+        }
+    }
 }

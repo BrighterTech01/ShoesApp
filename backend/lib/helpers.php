@@ -151,6 +151,17 @@ function uploads_disk_path(string $path = ''): string
     return $base . DIRECTORY_SEPARATOR . ltrim($path, '\\/');
 }
 
+function image_mime_type(string $filename): string
+{
+    return match (strtolower((string) pathinfo($filename, PATHINFO_EXTENSION))) {
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+        default => 'application/octet-stream',
+    };
+}
+
 function save_uploaded_image(string $fieldName = 'image'): ?string
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
@@ -196,7 +207,7 @@ function public_image_url(?string $filename): string
         return app_url('web-admin/assets/placeholder-shoe.svg');
     }
 
-    return uploads_url($filename);
+    return backend_url('image.php?file=' . rawurlencode($filename));
 }
 
 function normalize_status(string $value, string $fallback = 'active'): string

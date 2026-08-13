@@ -9,7 +9,11 @@ try {
     }
 
     $user = register_account(request_data());
-    success_response(user_payload($user), 'Account created successfully.', 201);
+    success_response(
+        auth_response_payload($user),
+        'Account created successfully. Please check your email to verify your account.',
+        201
+    );
 } catch (Throwable $throwable) {
     error_response($throwable->getMessage(), 422);
 }

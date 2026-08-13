@@ -56,6 +56,11 @@ function database_schema_statements(): array
             city VARCHAR(100) DEFAULT NULL,
             province VARCHAR(100) DEFAULT NULL,
             zip_code VARCHAR(20) DEFAULT NULL,
+            email_verified_at TIMESTAMP NULL DEFAULT NULL,
+            email_verification_token_hash VARCHAR(64) DEFAULT NULL,
+            email_verification_expires_at TIMESTAMP NULL DEFAULT NULL,
+            password_reset_token_hash VARCHAR(64) DEFAULT NULL,
+            password_reset_expires_at TIMESTAMP NULL DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) {$suffix}",
@@ -150,6 +155,8 @@ function database_schema_statements(): array
             zip_code VARCHAR(20) DEFAULT NULL,
             landmark VARCHAR(150) DEFAULT NULL,
             notes TEXT DEFAULT NULL,
+            shipping_location VARCHAR(190) DEFAULT NULL,
+            shipping_location_updated_at TIMESTAMP NULL DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" .
             optional_constraints([
@@ -173,6 +180,21 @@ function database_schema_statements(): array
                 'CONSTRAINT fk_order_items_variant FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL',
             ]) . "
         ) {$suffix}",
+        "CREATE TABLE IF NOT EXISTS order_feedback (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            order_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NOT NULL,
+            rating TINYINT UNSIGNED NOT NULL,
+            feedback TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_order_feedback (order_id),
+            KEY idx_order_feedback_user (user_id)" .
+            optional_constraints([
+                'CONSTRAINT fk_order_feedback_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE',
+                'CONSTRAINT fk_order_feedback_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE',
+            ]) . "
+        ) {$suffix}",
         "CREATE TABLE IF NOT EXISTS stock_history (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             product_id BIGINT UNSIGNED NOT NULL,
@@ -190,6 +212,23 @@ function database_schema_statements(): array
                 'CONSTRAINT fk_stock_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL',
             ]) . "
         ) {$suffix}",
+    ];
+}
+
+function schema_column_definitions(): array
+{
+    return [
+        'users' => [
+            'email_verified_at' => 'email_verified_at TIMESTAMP NULL DEFAULT NULL AFTER zip_code',
+            'email_verification_token_hash' => 'email_verification_token_hash VARCHAR(64) DEFAULT NULL AFTER email_verified_at',
+            'email_verification_expires_at' => 'email_verification_expires_at TIMESTAMP NULL DEFAULT NULL AFTER email_verification_token_hash',
+            'password_reset_token_hash' => 'password_reset_token_hash VARCHAR(64) DEFAULT NULL AFTER email_verification_expires_at',
+            'password_reset_expires_at' => 'password_reset_expires_at TIMESTAMP NULL DEFAULT NULL AFTER password_reset_token_hash',
+        ],
+        'orders' => [
+            'shipping_location' => 'shipping_location VARCHAR(190) DEFAULT NULL AFTER notes',
+            'shipping_location_updated_at' => 'shipping_location_updated_at TIMESTAMP NULL DEFAULT NULL AFTER shipping_location',
+        ],
     ];
 }
 

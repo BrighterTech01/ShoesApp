@@ -1,1 +1,0 @@
-auth_user|a:10:{s:2:"id";i:190;s:4:"name";s:11:"QA Customer";s:5:"email";s:35:"qa_register_1776929303@example.test";s:4:"role";s:8:"customer";s:5:"phone";s:11:"09123456789";s:7:"address";s:11:"Test Street";s:4:"city";s:6:"Manila";s:8:"province";s:12:"Metro Manila";s:8:"zip_code";s:4:"1000";s:10:"created_at";s:19:"2026-04-23 15:28:23";}

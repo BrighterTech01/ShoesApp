@@ -16,6 +16,9 @@ Copy-Item -Path (Join-Path $projectRoot "backend") -Destination $stage -Recurse
 Copy-Item -Path (Join-Path $projectRoot "web-admin") -Destination $stage -Recurse
 Copy-Item -Path (Join-Path $projectRoot "storage") -Destination $stage -Recurse
 Copy-Item -Path (Join-Path $projectRoot "index.php") -Destination $stage
+if (Test-Path (Join-Path $projectRoot ".htaccess")) {
+    Copy-Item -Path (Join-Path $projectRoot ".htaccess") -Destination $stage
+}
 Copy-Item -Path (Join-Path $projectRoot "README.md") -Destination $stage
 Copy-Item -Path (Join-Path $projectRoot "DEPLOYMENT.md") -Destination $stage
 

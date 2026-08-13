@@ -21,7 +21,7 @@ try {
         error_response('Invalid email or password.', 401);
     }
 
-    success_response(user_payload($user), 'Login successful.');
+    success_response(auth_response_payload($user), 'Login successful.');
 } catch (Throwable $throwable) {
     error_response($throwable->getMessage(), 500);
 }
